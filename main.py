@@ -173,7 +173,7 @@ def dt(time1: int, time2: int) -> str:
 
 def fetch_leaderboard(board: int, year: int) -> tuple[dict, float] | None:
     """Return (leaderboard json, cache mtime), refreshing the cache when stale."""
-    cachefile = f"/tmp/aoc-leaderboard/{board}-{year}.json"
+    cachefile = f"/tmp/aoc-leaderboard-{board}-{year}.json"
 
     if (
         not os.path.exists(cachefile)
