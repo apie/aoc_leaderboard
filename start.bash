@@ -1,2 +1,2 @@
 #!/bin/bash
-uv run --script main.py
+~/.local/bin/uv run --script main.py
