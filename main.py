@@ -182,6 +182,9 @@ def fetch_leaderboard(board: int, year: int) -> tuple[dict, float] | None:
         try:
             with open(COOKIEFILE) as f:
                 cookie = f.readline().strip().replace(":", "=").replace('"', '')
+        except FileNotFoundError:
+            raise
+        try:
             r = httpx.get(
                 f"https://adventofcode.com/{year}/leaderboard/private/view/{board}.json",
                 headers={"Cookie": cookie},
