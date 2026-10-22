@@ -24,7 +24,7 @@ app = FastAPI()
 
 TZ = ZoneInfo("Europe/Amsterdam")
 COOKIEFILE = os.environ.get(
-    "AOC_COOKIEFILE", "/tmp/aoc-leaderboard/cookie.txt"
+    "AOC_COOKIEFILE", "cookie.txt"
 )  # must look like: "session=f0oBaRbaz" or session:"f0oBaRbaz"
 print(f"{COOKIEFILE=}")
 MAX_AGE = 10 * 60  # max cache age
