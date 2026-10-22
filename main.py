@@ -350,4 +350,9 @@ def index(id: int | None = Query(None), year: int | None = Query(None)):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 12345)), reload=True)
+    uvicorn.run(
+        "main:app",
+        host="127.0.0.1",
+        port=int(os.environ.get("PORT", 12345)),
+        reload=bool(os.environ.get("DEBUG")),
+    )
