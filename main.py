@@ -3,6 +3,10 @@
 # requires-python = ">=3.10"
 # dependencies = ["fastapi", "uvicorn", "httpx"]
 # ///
+#
+# Port of https://github.com/cwverhey/adventofcode/tree/main/leaderboard to python and fastapi
+#
+
 import json
 import os
 import random
@@ -19,7 +23,10 @@ from fastapi.responses import HTMLResponse, PlainTextResponse
 app = FastAPI()
 
 TZ = ZoneInfo("Europe/Amsterdam")
-COOKIEFILE = os.environ.get("AOC_COOKIEFILE", "/tmp/cookie.txt")  # must look like: "session=f0oBaRbaz"
+COOKIEFILE = os.environ.get(
+    "AOC_COOKIEFILE", "/tmp/aoc-leaderboard/cookie.txt"
+)  # must look like: "session=f0oBaRbaz" or session:"f0oBaRbaz"
+print(f"{COOKIEFILE=}")
 MAX_AGE = 10 * 60  # max cache age
 DEFAULT_BOARD = 380357
 
@@ -166,12 +173,15 @@ def dt(time1: int, time2: int) -> str:
 
 def fetch_leaderboard(board: int, year: int) -> tuple[dict, float] | None:
     """Return (leaderboard json, cache mtime), refreshing the cache when stale."""
-    cachefile = f"/tmp/{board}-{year}.json"
+    cachefile = f"/tmp/aoc-leaderboard/{board}-{year}.json"
 
-    if not os.path.exists(cachefile) or os.path.getmtime(cachefile) < time.time() - MAX_AGE:
+    if (
+        not os.path.exists(cachefile)
+        or os.path.getmtime(cachefile) < time.time() - MAX_AGE
+    ):
         try:
             with open(COOKIEFILE) as f:
-                cookie = f.readline().strip()
+                cookie = f.readline().strip().replace(":", "=").replace('"', '')
             r = httpx.get(
                 f"https://adventofcode.com/{year}/leaderboard/private/view/{board}.json",
                 headers={"Cookie": cookie},
@@ -180,7 +190,10 @@ def fetch_leaderboard(board: int, year: int) -> tuple[dict, float] | None:
             if json.loads(r.text):  # only cache non-empty, valid json
                 with open(cachefile, "w") as f:
                     f.write(r.text)
-        except (OSError, ValueError, httpx.HTTPError):
+        except (OSError, ValueError, httpx.HTTPError) as e:
+            print(e)
+            print(r.status_code)
+            print(r.text)
             pass  # fall back to a stale cache, if any
 
     try:
@@ -197,7 +210,10 @@ def group_members(data: dict) -> list[tuple[int, list[dict]]]:
     for m in data["members"].values():
         # remove a level of depth in the time-array, and sort it
         m["completion_day_level"] = {
-            int(day): {int(p): s["get_star_ts"] for p, s in sorted(parts.items(), key=lambda kv: int(kv[0]))}
+            int(day): {
+                int(p): s["get_star_ts"]
+                for p, s in sorted(parts.items(), key=lambda kv: int(kv[0]))
+            }
             for day, parts in sorted(
                 (m.get("completion_day_level") or {}).items(), key=lambda kv: int(kv[0])
             )
@@ -216,7 +232,9 @@ def render_user(user: dict, year: int, days: list[int], today: int) -> str:
     name = escape(str(user.get("name") or f"anonymous user #{user['id']}"))
     out.append(f'<span class="name" data-uid="{user["id"]}" >')
     if user["id"] in USERPAGES:
-        out.append(f"<a href='{USERPAGES[user['id']].format(year=year)}' target='_blank'>{name}</a>")
+        out.append(
+            f"<a href='{USERPAGES[user['id']].format(year=year)}' target='_blank'>{name}</a>"
+        )
     else:
         out.append(name)
     out.append(f"</span> 🏅{user['local_score']}\n")
@@ -227,7 +245,9 @@ def render_user(user: dict, year: int, days: list[int], today: int) -> str:
 
     levels = user["completion_day_level"]
     for day in days:
-        out.append(f'\nday <a href="https://adventofcode.com/{year}/day/{day}">{day:02d}</a> ')
+        out.append(
+            f'\nday <a href="https://adventofcode.com/{year}/day/{day}">{day:02d}</a> '
+        )
         out.append(
             f"(<a href='https://vps3.stad.gr/cachingproxy/proxy?url=https://adventofcode.com/{year}/day/{day}'>mob</a>): "
         )
@@ -263,8 +283,12 @@ def index(id: int | None = Query(None), year: int | None = Query(None)):
 
     days = list(range(1, 13 if year >= 2025 else 26))
 
-    if year == now.year and now.day <= max(days):  # limit day range if from 1-24 december
-        days = list(range(1, now.day + 1 if now.hour >= 6 else now.day))  # include today after 6 AM
+    if year == now.year and now.day <= max(
+        days
+    ):  # limit day range if from 1-24 december
+        days = list(
+            range(1, now.day + 1 if now.hour >= 6 else now.day)
+        )  # include today after 6 AM
 
     result = fetch_leaderboard(board, year)
     if result is None:
@@ -275,9 +299,12 @@ def index(id: int | None = Query(None), year: int | None = Query(None)):
     data, data_time = result
 
     options = "".join(
-        f"\t<option value={y}{' selected' if y == year else ''}>{y}</option>\n" for y in years
+        f"\t<option value={y}{' selected' if y == year else ''}>{y}</option>\n"
+        for y in years
     )
-    hidden_id = f'<input type="hidden" name="id" value="{board}" />' if id is not None else ""
+    hidden_id = (
+        f'<input type="hidden" name="id" value="{board}" />' if id is not None else ""
+    )
 
     rows = "".join(
         f"<div class='row'>\n<div class='stars'>⭐️<br />{stars}</div>"
@@ -323,4 +350,4 @@ def index(id: int | None = Query(None), year: int | None = Query(None)):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 12345)))
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 12345)), reload=True)
