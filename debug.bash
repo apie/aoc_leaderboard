@@ -1,1 +1,2 @@
+#!/bin/bash
 DEBUG=1 uv run --script main.py
