@@ -1,8 +1,3 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.10"
-# dependencies = ["fastapi", "uvicorn", "httpx"]
-# ///
 #
 # Port of https://github.com/cwverhey/adventofcode/tree/main/leaderboard to python and fastapi
 #

@@ -1,2 +1,3 @@
 #!/bin/bash
-DEBUG=1 ~/.local/bin/uv run --script main.py
+cd "$(dirname "$0")"
+DEBUG=1 ~/.local/bin/uv run main.py
